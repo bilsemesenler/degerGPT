@@ -13,10 +13,12 @@ else:
 
 SYSTEM_PROMPT = "Sen bilge bir arkadaşsın. Değerler eğitimi veriyorsun."
 
-# Model tanımlama (try-except bloğu içine alalım)
+# app.py içindeki bu satırı bul ve değiştir:
 try:
-    # 'models/' ön ekini ekledik
-    model = genai.GenerativeModel('models/gemini-1.5-flash', system_instruction=SYSTEM_PROMPT)
+    model = genai.GenerativeModel(
+        model_name='models/gemini-1.0-pro', # 'gemini-1.5-flash' yerine bunu yazdık
+        system_instruction=SYSTEM_PROMPT
+    )
 except Exception as e:
     st.error(f"Model yüklenirken hata oluştu: {e}")
 
