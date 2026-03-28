@@ -1,70 +1,61 @@
 import streamlit as st
-import google.generativeai as genai
+from google import genai
 import os
 
-# 1. Sayfa Yapılandırması
-st.set_page_config(page_title="DeğerGPT", page_icon="🌟", layout="centered")
+# Sayfa Yapılandırması
+st.set_page_config(page_title="DeğerGPT", page_icon="🌟")
+st.title("🌟 DeğerGPT: Bilge Arkadaşın")
 
-# 2. API Anahtarı Bağlantısı
-# Streamlit Secrets kısmında soldaki kutuya GOOGLE_API_KEY yazmalısın.
-if "GOOGLE_API_KEY" in st.secrets:
-    genai.configure(api_key=st.secrets["GOOGLE_API_KEY"])
+# 1. API Anahtarını Streamlit Secrets'tan alalım
+# Secrets kısmında sol kutuya GEMINI_API_KEY, sağa anahtarını yazmalısın.
+if "GEMINI_API_KEY" in st.secrets:
+    api_key = st.secrets["GEMINI_API_KEY"]
+    client = genai.Client(api_key=api_key)
 else:
-    st.error("Hata: API Anahtarı bulunamadı! Lütfen Streamlit ayarlarından Secrets kısmına 'GOOGLE_API_KEY' ekleyin.")
+    st.error("Hata: GEMINI_API_KEY Secrets kısmında bulunamadı!")
     st.stop()
 
-# 3. DeğerGPT Kişilik Ayarı (System Instruction)
-instruction = (
+# 2. Karakter Tanımlaması (System Instruction)
+SYSTEM_PROMPT = (
     "Senin adın DeğerGPT. Bir bilge arkadaş gibi; samimi, sıcak, 'sen' diliyle konuşan ve empati kuran bir tarzın var. "
     "Görevin: Öğrencilere dürüstlük, sorumluluk, saygı, yardımseverlik, adalet ve hoşgörü gibi değerleri öğretmek. "
     "Yöntemin: Doğrudan öğüt verme. Sokratik sorgulama yap. Örnek olaylar sun ve 'Sen olsan ne yapardın?' diye sor."
 )
 
-# 4. Model Başlatma (En uyumlu sürüm: gemini-1.5-flash)
-try:
-    model = genai.GenerativeModel(
-        model_name="gemini-1.5-flash",
-        system_instruction=instruction
-    )
-except Exception as e:
-    st.error(f"Model başlatılamadı, lütfen sayfayı yenileyin. Hata: {e}")
-
-# 5. Sohbet Geçmişi Yönetimi
+# Sohbet geçmişini başlat
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# Başlık ve Karşılama
-st.title("🌟 DeğerGPT: Bilge Arkadaşın")
-st.caption("Yapay Zekâ ile Değerler Eğitimi Projesi")
-
-# Geçmiş mesajları ekrana bas
+# Eski mesajları ekrana bas
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-# 6. Kullanıcı Girişi ve Yanıt Döngüsü
-if prompt := st.chat_input("Merhaba de ve başlayalım..."):
-    # Kullanıcı mesajını ekle
+# 3. Kullanıcı Girişi
+if prompt := st.chat_input("Nelerden konuşalım?"):
+    # Kullanıcı mesajını göster ve kaydet
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
 
-    # Yapay zekadan yanıt al
+    # Yapay Zekâ Yanıtı
     with st.chat_message("assistant"):
         try:
-            # Mesaj geçmişini Gemini formatına çevir
-            history = []
-            for m in st.session_state.messages[:-1]:
-                role = "user" if m["role"] == "user" else "model"
-                history.append({"role": role, "parts": [m["content"]]})
+            # Senin paylaştığın yeni nesil Client yapısı
+            # Not: gemini-3-flash-preview henüz herkese açık olmayabilir, 
+            # hata alırsan 'gemini-2.0-flash' veya 'gemini-1.5-flash' yazabilirsin.
+            response = client.models.generate_content(
+                model="gemini-1.5-flash", 
+                contents=prompt,
+                config={
+                    'system_instruction': SYSTEM_PROMPT,
+                    'temperature': 0.7
+                }
+            )
             
-            chat = model.start_chat(history=history)
-            response = chat.send_message(prompt)
-            
-            # Yanıtı göster ve kaydet
-            st.markdown(response.text)
-            st.session_state.messages.append({"role": "assistant", "content": response.text})
+            ai_response = response.text
+            st.markdown(ai_response)
+            st.session_state.messages.append({"role": "assistant", "content": ai_response})
             
         except Exception as e:
-            st.error(f"Yanıt oluşturulamadı. Hata: {e}")
-            st.info("İpucu: Eğer 404 hatası alıyorsanız, API anahtarınızın aktif olduğundan ve kısıtlanmadığından emin olun.")
+            st.error(f"Bir hata oluştu: {e}")
