@@ -49,7 +49,7 @@ if prompt := st.chat_input("Nelerden konuşalım?"):
             # hata alırsan 'gemini-2.0-flash' veya 'gemini-1.5-flash' yazabilirsin.
             
             response = client.models.generate_content(
-                model="gemini-1.5-pro", # Başındaki models/ kısmını sildik
+                model="gemini-1.5-flash", # Başındaki models/ kısmını sildik
                 contents=prompt,
                 config={
                     'system_instruction': SYSTEM_PROMPT,
