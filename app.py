@@ -2,6 +2,9 @@ import streamlit as st
 from google import genai
 import os
 
+# Bu satırı importların hemen altına ekle
+os.environ["GOOGLE_API_USE_BETA_VERSION"] = "0"
+
 # Sayfa Yapılandırması
 st.set_page_config(page_title="DeğerGPT", page_icon="🌟")
 st.title("🌟 DeğerGPT: Bilge Arkadaşın")
