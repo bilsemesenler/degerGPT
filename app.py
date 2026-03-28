@@ -1,45 +1,54 @@
 import streamlit as st
 import google.generativeai as genai
 
+# Sayfa Ayarları
 st.set_page_config(page_title="DeğerGPT", page_icon="🌟")
 st.title("🌟 DeğerGPT: Bilge Arkadaşın")
 
-# API Key kontrolü
+# API Anahtarı Kontrolü
 if "GOOGLE_API_KEY" in st.secrets:
     genai.configure(api_key=st.secrets["GOOGLE_API_KEY"])
 else:
-    st.error("Secrets kısmında API anahtarı bulunamadı!")
+    st.error("Lütfen Streamlit Secrets kısmına GOOGLE_API_KEY ekle!")
     st.stop()
 
-SYSTEM_PROMPT = "Sen bilge bir arkadaşsın. Değerler eğitimi veriyorsun."
+# DeğerGPT'nin Kişilik Talimatı
+SYSTEM_PROMPT = "Senin adın DeğerGPT. Bir bilge arkadaş gibi; samimi, sıcak, 'sen' diliyle konuşan ve empati kuran bir tarzın var. Görevin: Öğrencilere dürüstlük, sorumluluk, saygı, yardımseverlik, adalet ve hoşgörü gibi değerleri öğretmek. Yöntemin: Doğrudan öğüt verme. Sokratik sorgulama yap. Örnek olaylar sun ve 'Sen olsan ne yapardın?' diye sor."
 
-# app.py içindeki bu satırı bul ve değiştir:
+# --- MODEL TANIMLAMA (EN UYUMLU YÖNTEM) ---
+# Burada model ismini 'gemini-pro' olarak sadeleştiriyoruz
 try:
-    model = genai.GenerativeModel(
-        model_name='models/gemini-1.0-pro', # 'gemini-1.5-flash' yerine bunu yazdık
-        system_instruction=SYSTEM_PROMPT
-    )
+    model = genai.GenerativeModel('gemini-pro') 
 except Exception as e:
-    st.error(f"Model yüklenirken hata oluştu: {e}")
+    st.error(f"Model başlatılamadı: {e}")
 
+# Sohbet geçmişini başlat
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
+# Geçmiş mesajları göster
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-if prompt := st.chat_input("Neler hissediyorsun?"):
+# Kullanıcı girişi
+if prompt := st.chat_input("Mesajını yaz..."):
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
 
     with st.chat_message("assistant"):
         try:
-            # Basit bir deneme: Geçmişi göndermeden önce modelin çalışıp çalışmadığını test edelim
-            response = model.generate_content(prompt)
-            st.markdown(response.text)
-            st.session_state.messages.append({"role": "assistant", "content": response.text})
+            # SİSTEM TALİMATINI MESAJIN BAŞINA EKLEYEREK GÖNDERİYORUZ (En güvenli yol)
+            full_prompt = f"{SYSTEM_PROMPT}\n\nKullanıcı diyor ki: {prompt}"
+            
+            response = model.generate_content(full_prompt)
+            
+            if response.text:
+                st.markdown(response.text)
+                st.session_state.messages.append({"role": "assistant", "content": response.text})
+            else:
+                st.warning("Modelden boş yanıt döndü.")
         except Exception as e:
-            st.error(f"Yanıt üretilirken bir hata oluştu: {e}")
-            st.info("Eğer 'NotFound' hatası alıyorsan, model ismini 'models/gemini-1.0-pro' olarak değiştirmeyi dene.")
+            st.error(f"Hata detayı: {e}")
+            st.info("İpucu: Eğer hala 404 alıyorsan, lütfen Google AI Studio'dan yeni bir API KEY alıp Secrets kısmına yapıştır.")
